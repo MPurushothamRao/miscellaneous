@@ -7,9 +7,9 @@ python martinize.py -f 1UBQ.pdb -o single-ubq.top -x 1UBQ-CG.pdb -ss 1UBQ.ssd -p
 # to change name martini itp in toplogy 
 sed -i -e 's/martini\.itp/martini_v2.2.itp/' single-ubq.top
 # to setup box
-gmx editconf -f 1UBQ-CG.pdb -o 1UBQ-CG.gro -d 1.0 -c -bt dodecahedron
+gmx editconf -f 1UBQ-CG.pdb -o box.gro -d 1.0 -c -bt dodecahedron
 # to minimise the coarse_grained structure in vaccum
-gmx grompp -f em_vac.mdp -c 1UBQ-CG.gro -p single-ubq.top -o em_vac.tpr
+gmx grompp -f em_vac.mdp -c box.gro -p single-ubq.top -o em_vac.tpr
 gmx mdrun -deffnm em_vac -v
 # solvate the protein
 gmx solvate -cp em_vac.gro -cs water.gro -radius 0.21 -o solvated.gro
@@ -18,12 +18,12 @@ count=$(grep -c "W" solvated.gro | tr -d '\n')
 #polarised water divide it by 3 
 echo -e "\nW    $count" >> system.top
 #to add ions
-#gmx grompp -f ions.mdp -c solvated.gro -p system.top -o ions.tpr
-#gmx genion -s ions.tpr -o ions.gro -p protein.top -pname NA+ -nname CL- -neutral
+gmx grompp -f ions.mdp -c solvated.gro -p system.top -o ions.tpr
+echo 13 | gmx genion -s ions.tpr -o ions.gro -p system.top -pname NA+ -nname CL- -neutral
 # make new index file to group solvate and ions into one solvent change according to requirement
 #gmx make_ndx -f solvated.gro -o index.ndx < index.txt
 #minimisation
-gmx grompp -f em.mdp -c solvated.gro -r solvated.gro -p system.top -o em.tpr
+gmx grompp -f em.mdp -c solvated.gro -r solvated.gro -p system.top -o em.tpr -maxwarn 1
 gmx mdrun -deffnm em -v
 # nvt equilibration
 gmx grompp -f nvt.mdp -c em.gro -r em.gro -p system.top -o nvt.tpr
